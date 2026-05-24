@@ -1,3 +1,8 @@
+"use client"
+
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
+
 import Sidebar from "@/components/Sidebar"
 import Header from "@/components/Header"
 import StatCard from "@/components/StatCard"
@@ -48,6 +53,21 @@ const committees = [
 ]
 
 export default function Home() {
+
+  const router = useRouter()
+
+  useEffect(() => {
+
+    const role =
+      localStorage.getItem("role")
+
+    if (!role) {
+
+      router.push("/login")
+
+    }
+
+  }, [])
 
   return (
 
