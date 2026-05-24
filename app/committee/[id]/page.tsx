@@ -2,150 +2,97 @@
 
 import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
-import { supabase } from "../../lib/supabase"
-
-const committees: any = {
-  tamayoz: {
-    name: "لجنة التميز",
-    total: 29,
-  },
-
-  edaria: {
-    name: "اللجنة الإدارية",
-    total: 29,
-  },
-
-  tahseel: {
-    name: "لجنة التحصيل الدراسي",
-    total: 29,
-  },
-
-  towjeeh: {
-    name: "لجنة التوجيه الطلابي",
-    total: 29,
-  },
-
-  nashat: {
-    name: "لجنة النشاط الطلابي",
-    total: 29,
-  },
-
-  amn: {
-    name: "فريق الأمن والسلامة",
-    total: 29,
-  },
-
-  eaqa: {
-    name: "فريق ذوي الإعاقة",
-    total: 29,
-  },
-}
+import { supabase } from "@/lib/supabase"
 
 export default function CommitteePage() {
-
   const params = useParams()
 
-  const id = params.id as string
-
-  const committee = committees[id]
+  const committeeName = decodeURIComponent(
+    params.id as string
+  )
 
   const [files, setFiles] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const [uploading, setUploading] =
-    useState(false)
+  const committee = {
+    name: committeeName,
+    required: 29,
+  }
 
-  async function loadFiles() {
+  // تحميل الملفات
+  const loadFiles = async () => {
+    const { data, error } = await supabase
+      .from("files")
+      .select("*")
+      .eq("committee", committee.name)
+      .order("created_at", { ascending: false })
 
-    const { data, error } =
-      await supabase
-        .from("files")
-        .select("*")
-        .eq("committee", committee.name)
-        .order("created_at", {
-          ascending: false,
-        })
-
-    console.log(data)
-    console.log(error)
-
-    if (data) {
+    if (!error && data) {
       setFiles(data)
     }
+
+    setLoading(false)
   }
 
   useEffect(() => {
     loadFiles()
   }, [])
 
-  async function handleUpload(
-    e: any
-  ) {
-
+  // رفع ملف
+  const handleUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = e.target.files?.[0]
 
     if (!file) return
 
-    setUploading(true)
+    const filePath = `${committee.name}/${Date.now()}-${file.name}`
 
-    const fileName =
-      Date.now() + "-" + file.name
-
-    const {
-      error: uploadError,
-    } = await supabase.storage
-      .from("committee-files1")
-      .upload(fileName, file)
+    // رفع الملف إلى Storage
+    const { error: uploadError } =
+      await supabase.storage
+        .from("committee-files1")
+        .upload(filePath, file)
 
     if (uploadError) {
-
-      alert(uploadError.message)
-
-      setUploading(false)
-
+      alert("فشل رفع الملف")
+      console.log(uploadError)
       return
     }
 
+    // رابط الملف
     const {
       data: { publicUrl },
     } = supabase.storage
       .from("committee-files1")
-      .getPublicUrl(fileName)
+      .getPublicUrl(filePath)
 
-    const {
-      data,
-      error: insertError,
-    } = await supabase
-      .from("files")
-      .insert([
+    // حفظ البيانات
+    const { error: insertError } =
+      await supabase.from("files").insert([
         {
           committee: committee.name,
           file_name: file.name,
           file_url: publicUrl,
           status: "قيد المراجعة",
+          created_at: new Date(),
         },
       ])
-      .select()
-
-    console.log(data)
-
-    console.log(insertError)
 
     if (insertError) {
-
-      alert(insertError.message)
-
-      setUploading(false)
-
+      alert("فشل حفظ البيانات")
+      console.log(insertError)
       return
     }
 
+    // تحديث الملفات
     await loadFiles()
 
-    setUploading(false)
+    alert("تم رفع الملف بنجاح")
   }
 
-  async function approveFile(id: number) {
-
+  // اعتماد الملف
+  const approveFile = async (id: number) => {
     await supabase
       .from("files")
       .update({
@@ -156,8 +103,8 @@ export default function CommitteePage() {
     loadFiles()
   }
 
-  async function rejectFile(id: number) {
-
+  // رفض الملف
+  const rejectFile = async (id: number) => {
     await supabase
       .from("files")
       .update({
@@ -168,221 +115,126 @@ export default function CommitteePage() {
     loadFiles()
   }
 
-  const approvedFiles =
-    files.filter(
-      (file) =>
-        file.status ===
-        "تم الاعتماد"
-    ).length
+  const uploadedCount = files.length
 
-  const progress = Math.round(
-    (approvedFiles /
-      committee.total) *
-      100
+  const percent = Math.round(
+    (uploadedCount / committee.required) * 100
   )
 
   return (
+    <main className="min-h-screen bg-[#020b2d] text-white p-5">
 
-    <main className="min-h-screen bg-[#020817] text-white p-4 md:p-10">
+      <div className="max-w-4xl mx-auto">
 
-      <div className="max-w-5xl mx-auto">
+        <h1 className="text-5xl font-black mb-3">
+          {committee.name}
+        </h1>
 
-        <div className="text-center mb-10">
+        <p className="text-gray-400 text-2xl mb-10">
+          إدارة ملفات اللجنة
+        </p>
 
-          <h1 className="text-4xl md:text-7xl font-black mb-4">
-            {committee?.name}
-          </h1>
+        {/* رفع الملفات */}
+        <div className="bg-[#07143f] rounded-[35px] p-8 mb-10 border border-cyan-900">
 
-          <p className="text-gray-400 text-xl md:text-2xl">
-            متابعة واعتماد ملفات اللجنة
-          </p>
-
-        </div>
-
-        <div className="bg-[#071226] border border-cyan-900/20 rounded-[35px] p-8 mb-10 text-center">
-
-          <label className="cursor-pointer">
+          <label className="bg-cyan-400 text-black font-black text-3xl px-10 py-5 rounded-full cursor-pointer inline-block shadow-[0_0_40px_#00d9ff]">
+            + رفع ملف جديد
 
             <input
               type="file"
               className="hidden"
               onChange={handleUpload}
             />
-
-            <div className="inline-block bg-cyan-400 hover:bg-cyan-300 transition text-black font-black text-2xl px-10 py-5 rounded-[25px] shadow-[0_0_35px_rgba(34,211,238,0.4)]">
-
-              {uploading
-                ? "جارٍ الرفع..."
-                : "+ رفع ملف جديد"}
-
-            </div>
-
           </label>
 
         </div>
 
-        <div className="grid grid-cols-2 gap-4 mb-10">
+        {/* الإحصائيات */}
+        <div className="grid grid-cols-2 gap-5 mb-10">
 
-          <div className="bg-[#071226] rounded-[30px] p-6 text-center">
-
-            <div className="text-gray-400 mb-4 text-lg">
+          <div className="bg-[#07143f] rounded-[30px] p-8">
+            <p className="text-gray-400 text-2xl mb-4">
               نسبة الإنجاز
-            </div>
+            </p>
 
-            <div className="text-cyan-400 text-5xl font-black">
-              {progress}%
-            </div>
-
+            <h2 className="text-cyan-400 text-6xl font-black">
+              {percent}%
+            </h2>
           </div>
 
-          <div className="bg-[#071226] rounded-[30px] p-6 text-center">
+          <div className="bg-[#07143f] rounded-[30px] p-8">
+            <p className="text-gray-400 text-2xl mb-4">
+              الملفات المرفوعة
+            </p>
 
-            <div className="text-gray-400 mb-4 text-lg">
-              الملفات المعتمدة
-            </div>
-
-            <div className="text-green-400 text-5xl font-black">
-              {approvedFiles}
-            </div>
-
-          </div>
-
-          <div className="bg-[#071226] rounded-[30px] p-6 text-center">
-
-            <div className="text-gray-400 mb-4 text-lg">
-              إجمالي المطلوب
-            </div>
-
-            <div className="text-white text-5xl font-black">
-              {committee?.total}
-            </div>
-
-          </div>
-
-          <div className="bg-[#071226] rounded-[30px] p-6 text-center">
-
-            <div className="text-gray-400 mb-4 text-lg">
-              المتبقي
-            </div>
-
-            <div className="text-red-400 text-5xl font-black">
-              {committee?.total -
-                approvedFiles}
-            </div>
-
+            <h2 className="text-green-400 text-6xl font-black">
+              {uploadedCount}
+            </h2>
           </div>
 
         </div>
 
-        <div className="bg-[#071226] rounded-[35px] p-8 mb-10">
+        {/* الملفات */}
+        <div className="bg-[#07143f] rounded-[35px] p-8">
 
-          <div className="flex justify-between mb-4">
-
-            <span className="text-2xl font-bold">
-              التقدم
-            </span>
-
-            <span className="text-cyan-400 text-2xl font-black">
-              {progress}%
-            </span>
-
-          </div>
-
-          <div className="w-full h-5 bg-[#0b1325] rounded-full overflow-hidden">
-
-            <div
-              className="h-full bg-cyan-400 rounded-full transition-all duration-500"
-              style={{
-                width: `${progress}%`,
-              }}
-            />
-
-          </div>
-
-        </div>
-
-        <div className="bg-[#071226] rounded-[35px] p-6">
-
-          <h2 className="text-4xl font-black mb-8 text-center">
+          <h2 className="text-5xl font-black mb-8">
             الملفات المرفوعة
           </h2>
 
-          {files.length === 0 ? (
-
-            <div className="bg-[#020b1d] rounded-[25px] p-12 text-center text-gray-400 text-2xl">
-
-              لا توجد ملفات مرفوعة
-
+          {loading ? (
+            <p>جاري التحميل...</p>
+          ) : files.length === 0 ? (
+            <div className="bg-[#091845] rounded-[25px] p-10 text-center text-gray-400 text-3xl">
+              لا توجد ملفات مرفوعة حتى الآن
             </div>
-
           ) : (
-
             <div className="space-y-5">
 
               {files.map((file) => (
 
                 <div
                   key={file.id}
-                  className="bg-[#020b1d] rounded-[25px] p-5"
+                  className="bg-[#091845] rounded-[25px] p-6"
                 >
 
-                  <div className="flex flex-col gap-5">
+                  <div className="flex justify-between items-center mb-4">
 
                     <div>
+                      <h3 className="text-2xl font-bold">
+                        {file.file_name}
+                      </h3>
 
-                      <div className="text-2xl font-black mb-3 break-all">
-
-                        📄 {file.file_name}
-
-                      </div>
-
-                      <div
-                        className={`text-xl font-bold ${
-                          file.status ===
-                          "تم الاعتماد"
-                            ? "text-green-400"
-                            : file.status ===
-                              "مرفوض"
-                            ? "text-red-400"
-                            : "text-yellow-400"
-                        }`}
-                      >
-
+                      <p className="text-gray-400 mt-2">
                         {file.status}
-
-                      </div>
-
+                      </p>
                     </div>
 
-                    <div className="flex gap-3 flex-wrap">
+                    <a
+                      href={file.file_url}
+                      target="_blank"
+                      className="bg-cyan-500 text-black px-5 py-3 rounded-full font-bold"
+                    >
+                      عرض الملف
+                    </a>
 
-                      <a
-                        href={file.file_url}
-                        target="_blank"
-                        className="bg-cyan-400 hover:bg-cyan-300 transition text-black font-black px-5 py-3 rounded-2xl"
-                      >
-                        عرض الملف
-                      </a>
+                  </div>
 
-                      <button
-                        onClick={() =>
-                          approveFile(file.id)
-                        }
-                        className="bg-green-500 hover:bg-green-400 transition text-black font-black px-5 py-3 rounded-2xl"
-                      >
-                        اعتماد
-                      </button>
+                  {/* أزرار الاعتماد */}
+                  <div className="flex gap-3 mt-5">
 
-                      <button
-                        onClick={() =>
-                          rejectFile(file.id)
-                        }
-                        className="bg-red-500 hover:bg-red-400 transition text-white font-black px-5 py-3 rounded-2xl"
-                      >
-                        رفض
-                      </button>
+                    <button
+                      onClick={() => approveFile(file.id)}
+                      className="bg-green-500 text-black font-bold px-5 py-3 rounded-full"
+                    >
+                      اعتماد
+                    </button>
 
-                    </div>
+                    <button
+                      onClick={() => rejectFile(file.id)}
+                      className="bg-red-500 text-white font-bold px-5 py-3 rounded-full"
+                    >
+                      رفض
+                    </button>
 
                   </div>
 
@@ -391,7 +243,6 @@ export default function CommitteePage() {
               ))}
 
             </div>
-
           )}
 
         </div>
@@ -399,6 +250,5 @@ export default function CommitteePage() {
       </div>
 
     </main>
-
   )
 }
