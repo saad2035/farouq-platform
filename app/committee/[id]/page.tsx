@@ -1,307 +1,296 @@
-const requirements = [
-  {
-    id: 1,
-    title: "الخطة التشغيلية",
-    required: 1,
-    uploaded: 1,
-    status: "مكتمل",
+"use client"
+
+import { useParams } from "next/navigation"
+import { useState } from "react"
+
+const committees: any = {
+  tamayoz: {
+    name: "لجنة التميز",
+    total: 29,
   },
 
-  {
-    id: 2,
-    title: "الاجتماعات",
-    required: 4,
-    uploaded: 2,
-    status: "قيد العمل",
+  edaria: {
+    name: "اللجنة الإدارية",
+    total: 29,
   },
 
-  {
-    id: 3,
-    title: "التقارير",
-    required: 20,
-    uploaded: 15,
-    status: "قيد العمل",
+  tahseel: {
+    name: "لجنة التحصيل الدراسي",
+    total: 29,
   },
 
-  {
-    id: 4,
-    title: "الإحصائيات الدورية",
-    required: 4,
-    uploaded: 4,
-    status: "مكتمل",
+  towjeeh: {
+    name: "لجنة التوجيه الطلابي",
+    total: 29,
   },
-]
 
-const getStatusColor = (status: string) => {
+  nashat: {
+    name: "لجنة النشاط الطلابي",
+    total: 29,
+  },
 
-  switch (status) {
+  amn: {
+    name: "فريق الأمن والسلامة",
+    total: 29,
+  },
 
-    case "مكتمل":
-      return "bg-emerald-100 text-emerald-700"
-
-    case "قيد العمل":
-      return "bg-amber-100 text-amber-700"
-
-    case "متأخر":
-      return "bg-red-100 text-red-700"
-
-    default:
-      return "bg-slate-100 text-slate-700"
-  }
+  eaqa: {
+    name: "فريق ذوي الإعاقة",
+    total: 29,
+  },
 }
 
 export default function CommitteePage() {
 
-  const totalRequired =
-    requirements.reduce(
-      (sum, item) => sum + item.required,
-      0
-    )
+  const params = useParams()
 
-  const totalUploaded =
-    requirements.reduce(
-      (sum, item) => sum + item.uploaded,
-      0
-    )
+  const id = params.id as string
 
-  const progress =
-    Math.round(
-      (totalUploaded / totalRequired) * 100
-    )
+  const committee = committees[id]
+
+  const [files, setFiles] = useState<any[]>([])
+
+  const approvedFiles = files.filter(
+    (file) => file.status === "تم الاعتماد"
+  ).length
+
+  const progress = Math.round(
+    (approvedFiles / committee.total) * 100
+  )
+
+  const handleUpload = (e: any) => {
+
+    const selectedFiles = Array.from(e.target.files)
+
+    const uploaded = selectedFiles.map((file: any) => ({
+      name: file.name,
+      status: "قيد المراجعة",
+    }))
+
+    setFiles([...files, ...uploaded])
+  }
+
+  const approveFile = (index: number) => {
+
+    const updated = [...files]
+
+    updated[index].status = "تم الاعتماد"
+
+    setFiles(updated)
+  }
+
+  const rejectFile = (index: number) => {
+
+    const updated = [...files]
+
+    updated[index].status = "مرفوض"
+
+    setFiles(updated)
+  }
 
   return (
 
-    <div className="min-h-screen bg-slate-100 p-10">
+    <main className="min-h-screen bg-[#020817] text-white p-4 md:p-10">
 
-      {/* Header */}
-      <div className="flex justify-between items-center mb-10">
+      <div className="max-w-5xl mx-auto">
 
-        <div>
+        {/* HEADER */}
 
-          <h1 className="text-4xl font-bold text-slate-800">
-            لجنة التميز
+        <div className="text-center mb-10">
+
+          <h1 className="text-4xl md:text-7xl font-black mb-4">
+            {committee.name}
           </h1>
 
-          <p className="text-slate-500 mt-2">
-            متابعة واعتماد متطلبات اللجنة
+          <p className="text-gray-400 text-xl md:text-2xl">
+            متابعة واعتماد ملفات اللجنة
           </p>
 
         </div>
 
-        <button className="bg-teal-700 text-white px-6 py-3 rounded-2xl shadow-lg hover:bg-teal-800 transition">
+        {/* UPLOAD */}
 
-          + رفع ملف جديد
+        <div className="bg-[#071226] border border-cyan-900/20 rounded-[35px] p-8 mb-10 text-center">
 
-        </button>
+          <label className="cursor-pointer">
 
-      </div>
+            <input
+              type="file"
+              multiple
+              className="hidden"
+              onChange={handleUpload}
+            />
 
-      {/* Progress */}
-      <div className="bg-white rounded-3xl p-8 shadow-lg mb-10">
+            <div className="inline-block bg-cyan-400 hover:bg-cyan-300 transition text-black font-black text-2xl px-10 py-5 rounded-[25px] shadow-[0_0_35px_rgba(34,211,238,0.4)]">
+              + رفع ملف جديد
+            </div>
 
-        <div className="flex justify-between items-center mb-4">
-
-          <h2 className="text-2xl font-bold">
-            نسبة الإنجاز
-          </h2>
-
-          <span className="text-4xl font-bold text-emerald-600">
-            {progress}%
-          </span>
+          </label>
 
         </div>
 
-        <div className="w-full bg-slate-200 rounded-full h-5 overflow-hidden">
+        {/* STATS */}
 
-          <div
-            className="bg-emerald-500 h-5 rounded-full transition-all"
-            style={{
-              width: `${progress}%`
-            }}
-          />
+        <div className="grid grid-cols-2 gap-4 mb-10">
+
+          <div className="bg-[#071226] rounded-[30px] p-6 text-center">
+
+            <div className="text-gray-400 mb-4 text-lg">
+              نسبة الإنجاز
+            </div>
+
+            <div className="text-cyan-400 text-5xl font-black">
+              {progress}%
+            </div>
+
+          </div>
+
+          <div className="bg-[#071226] rounded-[30px] p-6 text-center">
+
+            <div className="text-gray-400 mb-4 text-lg">
+              الملفات المعتمدة
+            </div>
+
+            <div className="text-green-400 text-5xl font-black">
+              {approvedFiles}
+            </div>
+
+          </div>
+
+          <div className="bg-[#071226] rounded-[30px] p-6 text-center">
+
+            <div className="text-gray-400 mb-4 text-lg">
+              إجمالي المطلوب
+            </div>
+
+            <div className="text-white text-5xl font-black">
+              {committee.total}
+            </div>
+
+          </div>
+
+          <div className="bg-[#071226] rounded-[30px] p-6 text-center">
+
+            <div className="text-gray-400 mb-4 text-lg">
+              المتبقي
+            </div>
+
+            <div className="text-red-400 text-5xl font-black">
+              {committee.total - approvedFiles}
+            </div>
+
+          </div>
 
         </div>
 
-        <div className="mt-4 text-slate-500">
+        {/* PROGRESS */}
 
-          تم رفع
+        <div className="bg-[#071226] rounded-[35px] p-8 mb-10">
 
-          <span className="font-bold mx-2 text-slate-800">
-            {totalUploaded}
-          </span>
+          <div className="flex justify-between mb-4">
 
-          من أصل
+            <span className="text-2xl font-bold">
+              التقدم
+            </span>
 
-          <span className="font-bold mx-2 text-slate-800">
-            {totalRequired}
-          </span>
+            <span className="text-cyan-400 text-2xl font-black">
+              {progress}%
+            </span>
 
-          متطلب
+          </div>
 
-        </div>
+          <div className="w-full h-5 bg-[#0b1325] rounded-full overflow-hidden">
 
-      </div>
+            <div
+              className="h-full bg-cyan-400 rounded-full transition-all duration-500"
+              style={{
+                width: `${progress}%`,
+              }}
+            />
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-
-        <div className="bg-white rounded-3xl p-8 shadow-lg">
-
-          <p className="text-slate-500">
-            إجمالي المتطلبات
-          </p>
-
-          <h3 className="text-5xl font-bold text-slate-700 mt-4">
-            {totalRequired}
-          </h3>
+          </div>
 
         </div>
 
-        <div className="bg-white rounded-3xl p-8 shadow-lg">
+        {/* FILES */}
 
-          <p className="text-slate-500">
+        <div className="bg-[#071226] rounded-[35px] p-6">
+
+          <h2 className="text-4xl font-black mb-8 text-center">
             الملفات المرفوعة
-          </p>
-
-          <h3 className="text-5xl font-bold text-cyan-600 mt-4">
-            {totalUploaded}
-          </h3>
-
-        </div>
-
-        <div className="bg-white rounded-3xl p-8 shadow-lg">
-
-          <p className="text-slate-500">
-            المتبقي
-          </p>
-
-          <h3 className="text-5xl font-bold text-red-500 mt-4">
-            {totalRequired - totalUploaded}
-          </h3>
-
-        </div>
-
-      </div>
-
-      {/* Requirements Table */}
-      <div className="bg-white rounded-3xl shadow-lg p-8">
-
-        <div className="flex justify-between items-center mb-8">
-
-          <h2 className="text-2xl font-bold">
-            متطلبات اللجنة
           </h2>
 
-          <button className="bg-slate-900 text-white px-5 py-3 rounded-2xl hover:bg-slate-800 transition">
+          {files.length === 0 ? (
 
-            عرض جميع الملفات
+            <div className="bg-[#020b1d] rounded-[25px] p-12 text-center text-gray-400 text-2xl">
+              لا توجد ملفات مرفوعة
+            </div>
 
-          </button>
+          ) : (
 
-        </div>
+            <div className="space-y-5">
 
-        <table className="w-full">
+              {files.map((file, index) => (
 
-          <thead>
-
-            <tr className="border-b text-right">
-
-              <th className="pb-5">
-                العنصر
-              </th>
-
-              <th className="pb-5">
-                المطلوب
-              </th>
-
-              <th className="pb-5">
-                المرفوع
-              </th>
-
-              <th className="pb-5">
-                نسبة الإنجاز
-              </th>
-
-              <th className="pb-5">
-                الحالة
-              </th>
-
-            </tr>
-
-          </thead>
-
-          <tbody>
-
-            {requirements.map((item) => {
-
-              const percentage =
-                Math.round(
-                  (item.uploaded / item.required) * 100
-                )
-
-              return (
-
-                <tr
-                  key={item.id}
-                  className="border-b hover:bg-slate-50 transition"
+                <div
+                  key={index}
+                  className="bg-[#020b1d] rounded-[25px] p-5"
                 >
 
-                  <td className="py-6 font-medium">
-                    {item.title}
-                  </td>
+                  <div className="flex flex-col gap-5">
 
-                  <td className="py-6">
-                    {item.required}
-                  </td>
+                    <div>
 
-                  <td className="py-6">
-                    {item.uploaded}
-                  </td>
-
-                  <td className="py-6 w-72">
-
-                    <div className="flex items-center gap-4">
-
-                      <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
-
-                        <div
-                          className="bg-teal-600 h-3 rounded-full"
-                          style={{
-                            width: `${percentage}%`
-                          }}
-                        />
-
+                      <div className="text-2xl font-black mb-3 break-all">
+                        📄 {file.name}
                       </div>
 
-                      <span className="text-sm font-bold text-slate-600">
-                        {percentage}%
-                      </span>
+                      <div
+                        className={`text-xl font-bold ${
+                          file.status === "تم الاعتماد"
+                            ? "text-green-400"
+                            : file.status === "مرفوض"
+                            ? "text-red-400"
+                            : "text-yellow-400"
+                        }`}
+                      >
+                        {file.status}
+                      </div>
 
                     </div>
 
-                  </td>
+                    <div className="flex gap-3 flex-wrap">
 
-                  <td className="py-6">
+                      <button
+                        onClick={() => approveFile(index)}
+                        className="bg-green-500 hover:bg-green-400 transition text-black font-black px-5 py-3 rounded-2xl"
+                      >
+                        اعتماد
+                      </button>
 
-                    <span
-                      className={`px-4 py-2 rounded-full text-sm ${getStatusColor(item.status)}`}
-                    >
-                      {item.status}
-                    </span>
+                      <button
+                        onClick={() => rejectFile(index)}
+                        className="bg-red-500 hover:bg-red-400 transition text-white font-black px-5 py-3 rounded-2xl"
+                      >
+                        رفض
+                      </button>
 
-                  </td>
+                    </div>
 
-                </tr>
+                  </div>
 
-              )
-            })}
+                </div>
 
-          </tbody>
+              ))}
 
-        </table>
+            </div>
+
+          )}
+
+        </div>
 
       </div>
 
-    </div>
+    </main>
   )
 }
