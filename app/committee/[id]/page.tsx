@@ -56,13 +56,17 @@ export default function CommitteePage() {
 
   async function loadFiles() {
 
-    const { data } = await supabase
-      .from("files")
-      .select("*")
-      .eq("committee", committee.name)
-      .order("created_at", {
-        ascending: false,
-      })
+    const { data, error } =
+      await supabase
+        .from("files")
+        .select("*")
+        .eq("committee", committee.name)
+        .order("created_at", {
+          ascending: false,
+        })
+
+    console.log(data)
+    console.log(error)
 
     if (data) {
       setFiles(data)
@@ -86,14 +90,15 @@ export default function CommitteePage() {
     const fileName =
       Date.now() + "-" + file.name
 
-    const { error } =
-      await supabase.storage
-        .from("committee-files1")
-        .upload(fileName, file)
+    const {
+      error: uploadError,
+    } = await supabase.storage
+      .from("committee-files1")
+      .upload(fileName, file)
 
-    if (error) {
+    if (uploadError) {
 
-      alert("فشل رفع الملف")
+      alert(uploadError.message)
 
       setUploading(false)
 
@@ -106,7 +111,10 @@ export default function CommitteePage() {
       .from("committee-files1")
       .getPublicUrl(fileName)
 
-    await supabase
+    const {
+      data,
+      error: insertError,
+    } = await supabase
       .from("files")
       .insert([
         {
@@ -116,6 +124,20 @@ export default function CommitteePage() {
           status: "قيد المراجعة",
         },
       ])
+      .select()
+
+    console.log(data)
+
+    console.log(insertError)
+
+    if (insertError) {
+
+      alert(insertError.message)
+
+      setUploading(false)
+
+      return
+    }
 
     await loadFiles()
 
@@ -165,12 +187,10 @@ export default function CommitteePage() {
 
       <div className="max-w-5xl mx-auto">
 
-        {/* HEADER */}
-
         <div className="text-center mb-10">
 
           <h1 className="text-4xl md:text-7xl font-black mb-4">
-            {committee.name}
+            {committee?.name}
           </h1>
 
           <p className="text-gray-400 text-xl md:text-2xl">
@@ -178,8 +198,6 @@ export default function CommitteePage() {
           </p>
 
         </div>
-
-        {/* UPLOAD */}
 
         <div className="bg-[#071226] border border-cyan-900/20 rounded-[35px] p-8 mb-10 text-center">
 
@@ -202,8 +220,6 @@ export default function CommitteePage() {
           </label>
 
         </div>
-
-        {/* STATS */}
 
         <div className="grid grid-cols-2 gap-4 mb-10">
 
@@ -238,7 +254,7 @@ export default function CommitteePage() {
             </div>
 
             <div className="text-white text-5xl font-black">
-              {committee.total}
+              {committee?.total}
             </div>
 
           </div>
@@ -250,14 +266,13 @@ export default function CommitteePage() {
             </div>
 
             <div className="text-red-400 text-5xl font-black">
-              {committee.total - approvedFiles}
+              {committee?.total -
+                approvedFiles}
             </div>
 
           </div>
 
         </div>
-
-        {/* PROGRESS */}
 
         <div className="bg-[#071226] rounded-[35px] p-8 mb-10">
 
@@ -285,8 +300,6 @@ export default function CommitteePage() {
           </div>
 
         </div>
-
-        {/* FILES */}
 
         <div className="bg-[#071226] rounded-[35px] p-6">
 
