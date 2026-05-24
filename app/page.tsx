@@ -1,194 +1,404 @@
 "use client"
 
-import Link from "next/link"
+import { useEffect, useState } from "react"
+import { useParams } from "next/navigation"
+import { supabase } from "../../lib/supabase"
 
-const committees = [
-  {
-    id: "tamayoz",
+const committees: any = {
+  tamayoz: {
     name: "لجنة التميز",
-    progress: 0,
-    uploaded: 0,
     total: 29,
   },
-  {
-    id: "edaria",
+
+  edaria: {
     name: "اللجنة الإدارية",
-    progress: 0,
-    uploaded: 0,
     total: 29,
   },
-  {
-    id: "tahseel",
+
+  tahseel: {
     name: "لجنة التحصيل الدراسي",
-    progress: 0,
-    uploaded: 0,
     total: 29,
   },
-  {
-    id: "towjeeh",
+
+  towjeeh: {
     name: "لجنة التوجيه الطلابي",
-    progress: 0,
-    uploaded: 0,
     total: 29,
   },
-  {
-    id: "nashat",
+
+  nashat: {
     name: "لجنة النشاط الطلابي",
-    progress: 0,
-    uploaded: 0,
     total: 29,
   },
-  {
-    id: "amn",
+
+  amn: {
     name: "فريق الأمن والسلامة",
-    progress: 0,
-    uploaded: 0,
     total: 29,
   },
-  {
-    id: "eaqa",
+
+  eaqa: {
     name: "فريق ذوي الإعاقة",
-    progress: 0,
-    uploaded: 0,
     total: 29,
   },
-]
+}
 
-export default function Home() {
+export default function CommitteePage() {
+
+  const params = useParams()
+
+  const id = params.id as string
+
+  const committee = committees[id]
+
+  const [files, setFiles] = useState<any[]>([])
+
+  const [uploading, setUploading] =
+    useState(false)
+
+  async function loadFiles() {
+
+    const { data, error } =
+      await supabase
+        .from("files")
+        .select("*")
+        .eq("committee", committee.name)
+        .order("created_at", {
+          ascending: false,
+        })
+
+    console.log(data)
+    console.log(error)
+
+    if (data) {
+      setFiles(data)
+    }
+  }
+
+  useEffect(() => {
+    loadFiles()
+  }, [])
+
+  async function handleUpload(
+    e: any
+  ) {
+
+    const file = e.target.files?.[0]
+
+    if (!file) return
+
+    setUploading(true)
+
+    const fileName =
+      Date.now() + "-" + file.name
+
+    const {
+      error: uploadError,
+    } = await supabase.storage
+      .from("committee-files1")
+      .upload(fileName, file)
+
+    if (uploadError) {
+
+      alert(uploadError.message)
+
+      setUploading(false)
+
+      return
+    }
+
+    const {
+      data: { publicUrl },
+    } = supabase.storage
+      .from("committee-files1")
+      .getPublicUrl(fileName)
+
+    const {
+      data,
+      error: insertError,
+    } = await supabase
+      .from("files")
+      .insert([
+        {
+          committee: committee.name,
+          file_name: file.name,
+          file_url: publicUrl,
+          status: "قيد المراجعة",
+        },
+      ])
+      .select()
+
+    console.log(data)
+
+    console.log(insertError)
+
+    if (insertError) {
+
+      alert(insertError.message)
+
+      setUploading(false)
+
+      return
+    }
+
+    await loadFiles()
+
+    setUploading(false)
+  }
+
+  async function approveFile(id: number) {
+
+    await supabase
+      .from("files")
+      .update({
+        status: "تم الاعتماد",
+      })
+      .eq("id", id)
+
+    loadFiles()
+  }
+
+  async function rejectFile(id: number) {
+
+    await supabase
+      .from("files")
+      .update({
+        status: "مرفوض",
+      })
+      .eq("id", id)
+
+    loadFiles()
+  }
+
+  const approvedFiles =
+    files.filter(
+      (file) =>
+        file.status ===
+        "تم الاعتماد"
+    ).length
+
+  const progress = Math.round(
+    (approvedFiles /
+      committee.total) *
+      100
+  )
+
   return (
-    <main className="min-h-screen bg-[#020817] text-white p-6 md:p-10">
-      <div className="max-w-7xl mx-auto">
 
-        {/* HEADER */}
+    <main className="min-h-screen bg-[#020817] text-white p-4 md:p-10">
+
+      <div className="max-w-5xl mx-auto">
 
         <div className="text-center mb-10">
-          <h1 className="text-5xl md:text-7xl font-black mb-4">
-            منصة الفاروق الثانوية
+
+          <h1 className="text-4xl md:text-7xl font-black mb-4">
+            {committee?.name}
           </h1>
 
-          <p className="text-gray-400 text-xl">
-            متابعة واعتماد أعمال اللجان
+          <p className="text-gray-400 text-xl md:text-2xl">
+            متابعة واعتماد ملفات اللجنة
           </p>
+
         </div>
 
-        {/* BUTTON */}
+        <div className="bg-[#071226] border border-cyan-900/20 rounded-[35px] p-8 mb-10 text-center">
 
-        <div className="flex justify-center mb-12">
-          <button className="bg-cyan-400 hover:bg-cyan-300 transition text-black font-black text-2xl px-10 py-5 rounded-[30px] shadow-[0_0_40px_rgba(34,211,238,0.4)]">
-            + رفع ملف جديد
-          </button>
+          <label className="cursor-pointer">
+
+            <input
+              type="file"
+              className="hidden"
+              onChange={handleUpload}
+            />
+
+            <div className="inline-block bg-cyan-400 hover:bg-cyan-300 transition text-black font-black text-2xl px-10 py-5 rounded-[25px] shadow-[0_0_35px_rgba(34,211,238,0.4)]">
+
+              {uploading
+                ? "جارٍ الرفع..."
+                : "+ رفع ملف جديد"}
+
+            </div>
+
+          </label>
+
         </div>
 
-        {/* STATS */}
+        <div className="grid grid-cols-2 gap-4 mb-10">
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
+          <div className="bg-[#071226] rounded-[30px] p-6 text-center">
 
-          <div className="bg-[#071226] border border-cyan-900/30 rounded-[30px] p-8 text-center">
-            <div className="text-gray-400 text-xl mb-4">
-              إجمالي المطلوب
-            </div>
-
-            <div className="text-6xl font-black">
-              29
-            </div>
-          </div>
-
-          <div className="bg-[#071226] border border-cyan-900/30 rounded-[30px] p-8 text-center">
-            <div className="text-gray-400 text-xl mb-4">
+            <div className="text-gray-400 mb-4 text-lg">
               نسبة الإنجاز
             </div>
 
-            <div className="text-6xl font-black text-cyan-400">
-              0%
+            <div className="text-cyan-400 text-5xl font-black">
+              {progress}%
             </div>
+
           </div>
 
-          <div className="bg-[#071226] border border-cyan-900/30 rounded-[30px] p-8 text-center">
-            <div className="text-gray-400 text-xl mb-4">
-              الملفات المرفوعة
+          <div className="bg-[#071226] rounded-[30px] p-6 text-center">
+
+            <div className="text-gray-400 mb-4 text-lg">
+              الملفات المعتمدة
             </div>
 
-            <div className="text-6xl font-black text-green-400">
-              0
+            <div className="text-green-400 text-5xl font-black">
+              {approvedFiles}
             </div>
+
           </div>
 
-          <div className="bg-[#071226] border border-cyan-900/30 rounded-[30px] p-8 text-center">
-            <div className="text-gray-400 text-xl mb-4">
-              الملفات الناقصة
+          <div className="bg-[#071226] rounded-[30px] p-6 text-center">
+
+            <div className="text-gray-400 mb-4 text-lg">
+              إجمالي المطلوب
             </div>
 
-            <div className="text-6xl font-black text-red-400">
-              29
+            <div className="text-white text-5xl font-black">
+              {committee?.total}
             </div>
+
+          </div>
+
+          <div className="bg-[#071226] rounded-[30px] p-6 text-center">
+
+            <div className="text-gray-400 mb-4 text-lg">
+              المتبقي
+            </div>
+
+            <div className="text-red-400 text-5xl font-black">
+              {committee?.total -
+                approvedFiles}
+            </div>
+
           </div>
 
         </div>
 
-        {/* COMMITTEES */}
+        <div className="bg-[#071226] rounded-[35px] p-8 mb-10">
 
-        <div className="bg-[#071226] border border-cyan-900/30 rounded-[40px] p-8">
+          <div className="flex justify-between mb-4">
 
-          <h2 className="text-4xl font-black mb-8 text-center">
-            اللجان
-          </h2>
+            <span className="text-2xl font-bold">
+              التقدم
+            </span>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-
-            {committees.map((committee) => (
-
-              <Link
-                href={`/committee/${committee.id}`}
-                key={committee.id}
-                className="bg-[#020b1d] border border-cyan-900/30 rounded-[28px] p-6 block hover:scale-[1.03] transition duration-300"
-              >
-
-                <div className="flex items-center justify-between mb-6">
-
-                  <div className="text-cyan-400 text-3xl font-black">
-                    {committee.progress}%
-                  </div>
-
-                  <div className="w-16 h-16 rounded-2xl bg-[#16233d] flex items-center justify-center text-3xl">
-                    📁
-                  </div>
-
-                </div>
-
-                <h3 className="text-3xl font-black mb-6 leading-relaxed">
-                  {committee.name}
-                </h3>
-
-                <div className="w-full h-4 bg-[#09111f] rounded-full overflow-hidden mb-4">
-                  <div
-                    className="h-full bg-cyan-400 rounded-full"
-                    style={{
-                      width: `${committee.progress}%`,
-                    }}
-                  />
-                </div>
-
-                <div className="flex justify-between text-gray-400 text-lg">
-
-                  <span>
-                    المرفوع: {committee.uploaded}
-                  </span>
-
-                  <span>
-                    المطلوب: {committee.total}
-                  </span>
-
-                </div>
-
-              </Link>
-
-            ))}
+            <span className="text-cyan-400 text-2xl font-black">
+              {progress}%
+            </span>
 
           </div>
+
+          <div className="w-full h-5 bg-[#0b1325] rounded-full overflow-hidden">
+
+            <div
+              className="h-full bg-cyan-400 rounded-full transition-all duration-500"
+              style={{
+                width: `${progress}%`,
+              }}
+            />
+
+          </div>
+
+        </div>
+
+        <div className="bg-[#071226] rounded-[35px] p-6">
+
+          <h2 className="text-4xl font-black mb-8 text-center">
+            الملفات المرفوعة
+          </h2>
+
+          {files.length === 0 ? (
+
+            <div className="bg-[#020b1d] rounded-[25px] p-12 text-center text-gray-400 text-2xl">
+
+              لا توجد ملفات مرفوعة
+
+            </div>
+
+          ) : (
+
+            <div className="space-y-5">
+
+              {files.map((file) => (
+
+                <div
+                  key={file.id}
+                  className="bg-[#020b1d] rounded-[25px] p-5"
+                >
+
+                  <div className="flex flex-col gap-5">
+
+                    <div>
+
+                      <div className="text-2xl font-black mb-3 break-all">
+
+                        📄 {file.file_name}
+
+                      </div>
+
+                      <div
+                        className={`text-xl font-bold ${
+                          file.status ===
+                          "تم الاعتماد"
+                            ? "text-green-400"
+                            : file.status ===
+                              "مرفوض"
+                            ? "text-red-400"
+                            : "text-yellow-400"
+                        }`}
+                      >
+
+                        {file.status}
+
+                      </div>
+
+                    </div>
+
+                    <div className="flex gap-3 flex-wrap">
+
+                      <a
+                        href={file.file_url}
+                        target="_blank"
+                        className="bg-cyan-400 hover:bg-cyan-300 transition text-black font-black px-5 py-3 rounded-2xl"
+                      >
+                        عرض الملف
+                      </a>
+
+                      <button
+                        onClick={() =>
+                          approveFile(file.id)
+                        }
+                        className="bg-green-500 hover:bg-green-400 transition text-black font-black px-5 py-3 rounded-2xl"
+                      >
+                        اعتماد
+                      </button>
+
+                      <button
+                        onClick={() =>
+                          rejectFile(file.id)
+                        }
+                        className="bg-red-500 hover:bg-red-400 transition text-white font-black px-5 py-3 rounded-2xl"
+                      >
+                        رفض
+                      </button>
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+              ))}
+
+            </div>
+
+          )}
 
         </div>
 
       </div>
+
     </main>
+
   )
 }
