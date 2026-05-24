@@ -1,115 +1,198 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 
-export default function LoginPage() {
+import Sidebar from "../components/Sidebar"
+import Header from "../components/Header"
+import StatsCards from "../components/StatsCards"
+import CommitteeCard from "../components/CommitteeCard"
+
+const committees = [
+
+  {
+    id: "tamayoz",
+    name: "لجنة التميز",
+    progress: 82,
+  },
+
+  {
+    id: "edaria",
+    name: "اللجنة الإدارية",
+    progress: 61,
+  },
+
+  {
+    id: "tahseel",
+    name: "لجنة التحصيل الدراسي",
+    progress: 45,
+  },
+
+  {
+    id: "towjeeh",
+    name: "لجنة التوجيه الطلابي",
+    progress: 71,
+  },
+
+  {
+    id: "nashat",
+    name: "لجنة النشاط الطلابي",
+    progress: 91,
+  },
+
+  {
+    id: "amn",
+    name: "فريق الأمن والسلامة",
+    progress: 53,
+  },
+
+  {
+    id: "eaqa",
+    name: "فريق ذوي الإعاقة",
+    progress: 37,
+  },
+
+]
+
+export default function Home() {
 
   const router = useRouter()
 
-  const [email, setEmail] =
-    useState("")
+  useEffect(() => {
 
-  const [password, setPassword] =
-    useState("")
+    const role =
+      localStorage.getItem("role")
 
-  function handleLogin(
-    e: React.FormEvent
-  ) {
+    if (!role) {
 
-    e.preventDefault()
+      router.push("/login")
 
-    // مؤقتًا دخول تجريبي
-
-    if (
-      email === "admin@farouq.com"
-    ) {
-
-      localStorage.setItem(
-        "role",
-        "admin"
-      )
-
-      router.push("/")
-
-      return
     }
 
-    localStorage.setItem(
-      "role",
-      "committee"
-    )
-
-    router.push("/")
-  }
+  }, [router])
 
   return (
 
-    <main className="min-h-screen bg-[#020817] text-white flex items-center justify-center p-6">
+    <main className="min-h-screen bg-[#020817] text-white flex">
 
-      <div className="w-full max-w-xl bg-[#071226] rounded-[40px] p-10 border border-cyan-900/20">
+      {/* SIDEBAR */}
 
-        <div className="text-center mb-10">
+      <Sidebar />
 
-          <h1 className="text-5xl font-black mb-4">
-            منصة الفاروق
-          </h1>
+      {/* CONTENT */}
 
-          <p className="text-gray-400 text-xl">
-            Smart Governance Platform
-          </p>
+      <div className="flex-1 p-5 md:p-10 overflow-x-hidden">
+
+        {/* HEADER */}
+
+        <Header />
+
+        {/* STATS */}
+
+        <StatsCards />
+
+        {/* WORKFLOW */}
+
+        <div className="bg-[#071226] rounded-[35px] border border-cyan-900/20 p-8 mb-10">
+
+          <div className="mb-8">
+
+            <h2 className="text-4xl font-black mb-3">
+              دورة الاعتماد
+            </h2>
+
+            <p className="text-gray-400 text-lg">
+              جميع الملفات تمر بمراحل المراجعة والاعتماد
+            </p>
+
+          </div>
+
+          <div className="grid grid-cols-2 xl:grid-cols-4 gap-5">
+
+            <div className="bg-[#020b1d] rounded-[30px] p-8 text-center">
+
+              <div className="w-20 h-20 rounded-full bg-cyan-400 flex items-center justify-center text-black text-4xl font-black mx-auto mb-5">
+                1
+              </div>
+
+              <div className="text-3xl font-black">
+                رفع الملف
+              </div>
+
+            </div>
+
+            <div className="bg-[#020b1d] rounded-[30px] p-8 text-center">
+
+              <div className="w-20 h-20 rounded-full bg-yellow-400 flex items-center justify-center text-black text-4xl font-black mx-auto mb-5">
+                2
+              </div>
+
+              <div className="text-3xl font-black">
+                المراجعة
+              </div>
+
+            </div>
+
+            <div className="bg-[#020b1d] rounded-[30px] p-8 text-center">
+
+              <div className="w-20 h-20 rounded-full bg-blue-400 flex items-center justify-center text-black text-4xl font-black mx-auto mb-5">
+                3
+              </div>
+
+              <div className="text-3xl font-black">
+                التدقيق
+              </div>
+
+            </div>
+
+            <div className="bg-[#020b1d] rounded-[30px] p-8 text-center">
+
+              <div className="w-20 h-20 rounded-full bg-green-400 flex items-center justify-center text-black text-4xl font-black mx-auto mb-5">
+                4
+              </div>
+
+              <div className="text-3xl font-black">
+                الاعتماد
+              </div>
+
+            </div>
+
+          </div>
 
         </div>
 
-        <form
-          onSubmit={handleLogin}
-          className="space-y-6"
-        >
+        {/* COMMITTEES */}
 
-          <div>
+        <div className="bg-[#071226] rounded-[35px] border border-cyan-900/20 p-8">
 
-            <label className="block mb-3 text-xl font-bold">
-              البريد الإلكتروني
-            </label>
+          <div className="mb-10">
 
-            <input
-              type="email"
-              value={email}
-              onChange={(e) =>
-                setEmail(e.target.value)
-              }
-              className="w-full bg-[#020b1d] border border-cyan-900/20 rounded-2xl px-5 py-4 text-xl outline-none"
-            />
+            <h2 className="text-4xl font-black mb-3">
+              اللجان والفرق
+            </h2>
+
+            <p className="text-gray-400 text-lg">
+              متابعة أعمال اللجان المدرسية
+            </p>
 
           </div>
 
-          <div>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
 
-            <label className="block mb-3 text-xl font-bold">
-              كلمة المرور
-            </label>
+            {committees.map((committee) => (
 
-            <input
-              type="password"
-              value={password}
-              onChange={(e) =>
-                setPassword(
-                  e.target.value
-                )
-              }
-              className="w-full bg-[#020b1d] border border-cyan-900/20 rounded-2xl px-5 py-4 text-xl outline-none"
-            />
+              <CommitteeCard
+                key={committee.id}
+                id={committee.id}
+                name={committee.name}
+                progress={committee.progress}
+              />
+
+            ))}
 
           </div>
 
-          <button
-            type="submit"
-            className="w-full bg-cyan-400 hover:bg-cyan-300 transition text-black font-black text-2xl py-5 rounded-2xl shadow-[0_0_35px_rgba(34,211,238,0.4)]"
-          >
-            تسجيل الدخول
-          </button>
-
-        </form>
+        </div>
 
       </div>
 
