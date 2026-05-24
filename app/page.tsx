@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation"
 
 import Sidebar from "@/components/Sidebar"
 import Header from "@/components/Header"
-import StatCard from "@/components/StatCard"
+import StatsCards from "@/components/StatsCards"
 import CommitteeCard from "@/components/CommitteeCard"
 
 const committees = [
+
   {
     id: "tamayoz",
     name: "لجنة التميز",
@@ -50,6 +51,7 @@ const committees = [
     name: "فريق ذوي الإعاقة",
     progress: 37,
   },
+
 ]
 
 export default function Home() {
@@ -81,55 +83,27 @@ export default function Home() {
 
       <div className="flex-1 p-5 md:p-10 overflow-x-hidden">
 
+        {/* HEADER */}
+
         <Header />
 
         {/* STATS */}
 
-        <div className="grid grid-cols-2 xl:grid-cols-4 gap-5 mb-10">
-
-          <StatCard
-            title="إجمالي الملفات"
-            value="124"
-            color="text-white"
-          />
-
-          <StatCard
-            title="الملفات المعتمدة"
-            value="89"
-            color="text-green-400"
-          />
-
-          <StatCard
-            title="بانتظار المراجعة"
-            value="21"
-            color="text-yellow-400"
-          />
-
-          <StatCard
-            title="نسبة الإنجاز"
-            value="72%"
-            color="text-cyan-400"
-          />
-
-        </div>
+        <StatsCards />
 
         {/* WORKFLOW */}
 
         <div className="bg-[#071226] rounded-[35px] border border-cyan-900/20 p-8 mb-10">
 
-          <div className="flex items-center justify-between mb-8">
+          <div className="mb-8">
 
-            <div>
+            <h2 className="text-4xl font-black mb-3">
+              دورة الاعتماد
+            </h2>
 
-              <h2 className="text-4xl font-black mb-2">
-                دورة الاعتماد
-              </h2>
-
-              <p className="text-gray-400 text-lg">
-                جميع الملفات تمر بمراحل الاعتماد والمراجعة
-              </p>
-
-            </div>
+            <p className="text-gray-400 text-lg">
+              جميع الملفات تمر بمراحل المراجعة والاعتماد
+            </p>
 
           </div>
 
@@ -191,19 +165,15 @@ export default function Home() {
 
         <div className="bg-[#071226] rounded-[35px] border border-cyan-900/20 p-8">
 
-          <div className="flex items-center justify-between mb-10">
+          <div className="mb-10">
 
-            <div>
+            <h2 className="text-4xl font-black mb-3">
+              اللجان والفرق
+            </h2>
 
-              <h2 className="text-4xl font-black mb-2">
-                اللجان والفرق
-              </h2>
-
-              <p className="text-gray-400 text-lg">
-                متابعة أداء اللجان المدرسية
-              </p>
-
-            </div>
+            <p className="text-gray-400 text-lg">
+              متابعة أعمال اللجان المدرسية
+            </p>
 
           </div>
 
