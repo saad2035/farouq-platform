@@ -1,7 +1,8 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
-import { useState } from "react"
+import { supabase } from "../../lib/supabase"
 
 const committees: any = {
   tamayoz: {
@@ -50,43 +51,113 @@ export default function CommitteePage() {
 
   const [files, setFiles] = useState<any[]>([])
 
-  const approvedFiles = files.filter(
-    (file) => file.status === "تم الاعتماد"
-  ).length
+  const [uploading, setUploading] =
+    useState(false)
+
+  async function loadFiles() {
+
+    const { data } = await supabase
+      .from("files")
+      .select("*")
+      .eq("committee", committee.name)
+      .order("created_at", {
+        ascending: false,
+      })
+
+    if (data) {
+      setFiles(data)
+    }
+  }
+
+  useEffect(() => {
+    loadFiles()
+  }, [])
+
+  async function handleUpload(
+    e: any
+  ) {
+
+    const file = e.target.files?.[0]
+
+    if (!file) return
+
+    setUploading(true)
+
+    const fileName =
+      Date.now() + "-" + file.name
+
+    const { error } =
+      await supabase.storage
+        .from("committee-files1")
+        .upload(fileName, file)
+
+    if (error) {
+
+      alert("فشل رفع الملف")
+
+      setUploading(false)
+
+      return
+    }
+
+    const {
+      data: { publicUrl },
+    } = supabase.storage
+      .from("committee-files1")
+      .getPublicUrl(fileName)
+
+    await supabase
+      .from("files")
+      .insert([
+        {
+          committee: committee.name,
+          file_name: file.name,
+          file_url: publicUrl,
+          status: "قيد المراجعة",
+        },
+      ])
+
+    await loadFiles()
+
+    setUploading(false)
+  }
+
+  async function approveFile(id: number) {
+
+    await supabase
+      .from("files")
+      .update({
+        status: "تم الاعتماد",
+      })
+      .eq("id", id)
+
+    loadFiles()
+  }
+
+  async function rejectFile(id: number) {
+
+    await supabase
+      .from("files")
+      .update({
+        status: "مرفوض",
+      })
+      .eq("id", id)
+
+    loadFiles()
+  }
+
+  const approvedFiles =
+    files.filter(
+      (file) =>
+        file.status ===
+        "تم الاعتماد"
+    ).length
 
   const progress = Math.round(
-    (approvedFiles / committee.total) * 100
+    (approvedFiles /
+      committee.total) *
+      100
   )
-
-  const handleUpload = (e: any) => {
-
-    const selectedFiles = Array.from(e.target.files)
-
-    const uploaded = selectedFiles.map((file: any) => ({
-      name: file.name,
-      status: "قيد المراجعة",
-    }))
-
-    setFiles([...files, ...uploaded])
-  }
-
-  const approveFile = (index: number) => {
-
-    const updated = [...files]
-
-    updated[index].status = "تم الاعتماد"
-
-    setFiles(updated)
-  }
-
-  const rejectFile = (index: number) => {
-
-    const updated = [...files]
-
-    updated[index].status = "مرفوض"
-
-    setFiles(updated)
-  }
 
   return (
 
@@ -116,13 +187,16 @@ export default function CommitteePage() {
 
             <input
               type="file"
-              multiple
               className="hidden"
               onChange={handleUpload}
             />
 
             <div className="inline-block bg-cyan-400 hover:bg-cyan-300 transition text-black font-black text-2xl px-10 py-5 rounded-[25px] shadow-[0_0_35px_rgba(34,211,238,0.4)]">
-              + رفع ملف جديد
+
+              {uploading
+                ? "جارٍ الرفع..."
+                : "+ رفع ملف جديد"}
+
             </div>
 
           </label>
@@ -223,17 +297,19 @@ export default function CommitteePage() {
           {files.length === 0 ? (
 
             <div className="bg-[#020b1d] rounded-[25px] p-12 text-center text-gray-400 text-2xl">
+
               لا توجد ملفات مرفوعة
+
             </div>
 
           ) : (
 
             <div className="space-y-5">
 
-              {files.map((file, index) => (
+              {files.map((file) => (
 
                 <div
-                  key={index}
+                  key={file.id}
                   className="bg-[#020b1d] rounded-[25px] p-5"
                 >
 
@@ -242,34 +318,52 @@ export default function CommitteePage() {
                     <div>
 
                       <div className="text-2xl font-black mb-3 break-all">
-                        📄 {file.name}
+
+                        📄 {file.file_name}
+
                       </div>
 
                       <div
                         className={`text-xl font-bold ${
-                          file.status === "تم الاعتماد"
+                          file.status ===
+                          "تم الاعتماد"
                             ? "text-green-400"
-                            : file.status === "مرفوض"
+                            : file.status ===
+                              "مرفوض"
                             ? "text-red-400"
                             : "text-yellow-400"
                         }`}
                       >
+
                         {file.status}
+
                       </div>
 
                     </div>
 
                     <div className="flex gap-3 flex-wrap">
 
+                      <a
+                        href={file.file_url}
+                        target="_blank"
+                        className="bg-cyan-400 hover:bg-cyan-300 transition text-black font-black px-5 py-3 rounded-2xl"
+                      >
+                        عرض الملف
+                      </a>
+
                       <button
-                        onClick={() => approveFile(index)}
+                        onClick={() =>
+                          approveFile(file.id)
+                        }
                         className="bg-green-500 hover:bg-green-400 transition text-black font-black px-5 py-3 rounded-2xl"
                       >
                         اعتماد
                       </button>
 
                       <button
-                        onClick={() => rejectFile(index)}
+                        onClick={() =>
+                          rejectFile(file.id)
+                        }
                         className="bg-red-500 hover:bg-red-400 transition text-white font-black px-5 py-3 rounded-2xl"
                       >
                         رفض
@@ -292,5 +386,6 @@ export default function CommitteePage() {
       </div>
 
     </main>
+
   )
 }
